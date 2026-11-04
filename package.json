@@ -1,8 +1,12 @@
 {
-  "name": "react-example",
+  "name": "loginote",
   "private": true,
-  "version": "1.0.5",
+  "version": "1.1.0",
   "type": "module",
+  "description": "本地优先的双向链接学习笔记应用，集成 AI 分析、间隔复习与知识图谱（Linux 移植版）",
+  "author": "GlimmerElve",
+  "license": "MIT",
+  "homepage": "https://github.com/gass88wei/LogiNote-linux",
   "main": "dist-electron/main.cjs",
   "scripts": {
     "build": "vite build",

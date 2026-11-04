@@ -7,12 +7,21 @@ files:
   - "dist-electron/**/*"
   - "dist/**/*"
   - "package.json"
+  # onnxruntime-node 同时打包 win32/darwin/linux-arm64 六套原生库，
+  # 单个包解包后近 300MB。Linux x64 只需要自己那一套。
+  - "!**/node_modules/onnxruntime-node/bin/napi-v3/win32/**"
+  - "!**/node_modules/onnxruntime-node/bin/napi-v3/darwin/**"
+  - "!**/node_modules/onnxruntime-node/bin/napi-v3/linux/arm64/**"
+  # 与 Linux 无关的构建期大件
+  - "!**/node_modules/onnxruntime-web/**"
+asar: true
+# .node 原生模块会自动解包，但它 dlopen 的同目录 libonnxruntime.so 不会。
+# 留在 asar 内会导致 "cannot open shared object file"，RAG 直接崩。
+asarUnpack:
+  - "**/node_modules/onnxruntime-node/**"
 extraResources:
   - from: "models/"
     to: "models/"
-  - from: "release/stt_dist/stt_server/"
-    to: "stt_server/"
-asar: true
 win:
   target:
     - nsis
@@ -22,7 +31,17 @@ nsis:
   perMachine: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+  synopsis: 本地优先的双向链接学习笔记（Linux 移植版）
+  maintainer: gass88wei <gass88wei@users.noreply.github.com>
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+deb:
+  priority: optional
 publish:
   provider: github
-  owner: GlimmerElve
-  repo: LogiNote-Chinese-version-
+  owner: gass88wei
+  repo: LogiNote-linux
