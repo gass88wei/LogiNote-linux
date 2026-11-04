@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { callLLM } from '../services/llmService';
 import { startStt, stopStt, warmupStt } from '../services/sttClient';
+import { STT_ENABLED, STT_DISABLED_HINT } from '../services/featureFlags';
 import rainAudio from '../../backgroundnoise/雨声.mp3';
 import campfireAudio from '../../backgroundnoise/篝火.mp3';
 import windAudio from '../../backgroundnoise/风.mp3';
@@ -226,6 +227,7 @@ export const FlowMode: React.FC<FlowModeProps> = ({ note, allNotes, reviewInterv
 
   /** 开始语音：restate 目标点击时插入时间戳，其后内容流式输出到可编辑复述区 */
   const startListeningSession = (target: 'restate' | 'summary') => {
+    if (!STT_ENABLED) return;
     activeVoiceTargetRef.current = target;
     setActiveVoiceTarget(target);
     currentRoundTextRef.current = '';
@@ -704,9 +706,11 @@ export const FlowMode: React.FC<FlowModeProps> = ({ note, allNotes, reviewInterv
               <button
                 className={`flow-voice-btn ${activeVoiceTarget === 'restate' && isListening ? 'flow-voice-btn-active-rec' : ''}`}
                 onClick={() => isListening ? stopListeningAndSave() : startListeningSession('restate')}
+                disabled={!STT_ENABLED}
+                title={STT_ENABLED ? undefined : STT_DISABLED_HINT}
               >
                 {isListening && activeVoiceTarget === 'restate' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                {isListening && activeVoiceTarget === 'restate' ? '停止' : '语音复盘'}
+                {!STT_ENABLED ? '语音未启用' : isListening && activeVoiceTarget === 'restate' ? '停止' : '语音复盘'}
               </button>
             </div>
             {isListening && activeVoiceTarget === 'restate' && (
@@ -789,9 +793,11 @@ export const FlowMode: React.FC<FlowModeProps> = ({ note, allNotes, reviewInterv
           <button
             className={`flow-voice-btn ${activeVoiceTarget === 'summary' && isListening ? 'flow-voice-btn-active-sum' : ''}`}
             onClick={() => isListening ? stopListeningAndSave() : startListeningSession('summary')}
+            disabled={!STT_ENABLED}
+            title={STT_ENABLED ? undefined : STT_DISABLED_HINT}
           >
             {isListening && activeVoiceTarget === 'summary' ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-            {isListening && activeVoiceTarget === 'summary' ? '停止' : '语音总结'}
+            {!STT_ENABLED ? '语音未启用' : isListening && activeVoiceTarget === 'summary' ? '停止' : '语音总结'}
           </button>
         </div>
         {isListening && activeVoiceTarget === 'summary' && (

@@ -12,7 +12,7 @@ interface ElectronVaultApi {
 
 /** Electron 主进程暴露的 STT 后端状态能力 */
 interface ElectronSttApi {
-  getStatus(): Promise<{ running: boolean; error?: string }>;
+  getStatus(): Promise<{ running: boolean; enabled?: boolean; error?: string }>;
   getPort(): Promise<number>;
 }
 

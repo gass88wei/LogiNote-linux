@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { NoteItem, ChatMessage, ReviewMessage, ReviewAnalysis, KnowledgePointMasteryResult } from '../types';
 import { callLLMStream } from '../services/llmStreamService';
 import { useSpeechRecognition } from '../services/speechRecognition';
+import { STT_ENABLED, STT_DISABLED_HINT } from '../services/featureFlags';
 import { parseIntentMarker, parseJsonLenient, ReviewSegment, scoreReviewSegmentsInParallel, mergeSegmentResults } from '../services/reviewSegmentScoring';
 import { scoreConceptEvidence, scoreJudgmentEvidence, scoreReasoningEvidence, determineMasteryLevel, computeLayeredMastery } from '../services/profile/scoring/threeLayer';
 import { recordReviewActivity } from '../services/learningAbility/timelineStore';
@@ -82,6 +83,10 @@ export const ReviewChat: React.FC<ReviewChatProps> = ({ noteId, noteTitle, quest
   }, [warmup]);
 
   const handleVoiceToggle = async () => {
+    if (!STT_ENABLED) {
+      setError(STT_DISABLED_HINT);
+      return;
+    }
     if (isListening) {
       // final 现为空信号，正文已由 partial 逐句写入，无需再取返回值
       await stopListening();
@@ -517,16 +522,21 @@ export const ReviewChat: React.FC<ReviewChatProps> = ({ noteId, noteTitle, quest
           <div className="flex gap-2 items-end">
             <button
               onClick={handleVoiceToggle}
+              title={STT_ENABLED ? undefined : STT_DISABLED_HINT}
               className={`px-3 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-1.5 shrink-0 ${
-                isListening
-                  ? 'bg-red-600 text-white'
-                  : !modelReady
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                !STT_ENABLED
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : isListening
+                    ? 'bg-red-600 text-white'
+                    : !modelReady
+                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
               }`}
-              disabled={isTutorResponding || !modelReady}
+              disabled={isTutorResponding || !STT_ENABLED || !modelReady}
             >
-              {isListening ? (
+              {!STT_ENABLED ? (
+                <><MicOff className="w-4 h-4" />语音未启用</>
+              ) : isListening ? (
                 <><MicOff className="w-4 h-4" />停止</>
               ) : modelReady ? (
                 <><Mic className="w-4 h-4" />语音</>

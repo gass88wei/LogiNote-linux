@@ -72,6 +72,13 @@ import {
 
 let sttProcess: ChildProcess | null = null;
 let sttPort: number = 0;
+
+/**
+ * 语音后端开关。Linux 移植版关闭：上游只有 Windows 打包分支
+ * （spawn resourcesPath/stt_server/stt_server.exe），Linux 上必然 ENOENT。
+ * 与 src/services/featureFlags.ts 的 STT_ENABLED 保持一致。
+ */
+const STT_ENABLED = false;
 let mainWindow: BrowserWindow | null = null;
 let argumentWindow: BrowserWindow | null = null;
 /** 待推送给编辑器窗口的数据（窗口尚未就绪时缓存） */
@@ -389,6 +396,10 @@ function getFreePort(): Promise<number> {
 
 /** 启动本地 STT 后端（动态端口；打包态 spawn 独立 exe，开发态 spawn python 脚本） */
 async function spawnSttServer(): Promise<void> {
+  if (!STT_ENABLED) {
+    console.log('[stt] 语音后端未启用（STT_ENABLED=false），跳过启动');
+    return;
+  }
   const isPackaged = app.isPackaged;
   const modelsDir = resolveModelsDir();
   const logPath = path.join(getDataRoot(), 'stt_server.log');
@@ -713,10 +724,11 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle('user-state:get-root', async (): Promise<string> => getUserStateDir());
 
-  ipcMain.handle('stt:status', (): { running: boolean } => ({
-    running: sttProcess !== null && sttProcess.exitCode === null,
+  ipcMain.handle('stt:status', (): { running: boolean; enabled: boolean } => ({
+    running: STT_ENABLED && sttProcess !== null && sttProcess.exitCode === null,
+    enabled: STT_ENABLED,
   }));
-  ipcMain.handle('stt:get-port', (): number => sttPort);
+  ipcMain.handle('stt:get-port', (): number => (STT_ENABLED ? sttPort : 0));
 
   // ===== 资料文档 RAG（upload / list / status / retry / delete / search / choose） =====
 

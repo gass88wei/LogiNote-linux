@@ -1,6 +1,9 @@
 /** STT WebSocket 客户端（与 Electron 主进程 spawn 的 python stt_server.py 通信，动态端口） */
 
+import { STT_ENABLED, STT_DISABLED_HINT } from './featureFlags';
+
 async function getSttWsUrl(): Promise<string> {
+  if (!STT_ENABLED) throw new Error(STT_DISABLED_HINT);
   const api = (window as any).electronAPI?.stt;
   if (api?.getPort) {
     const port = await api.getPort();
@@ -115,6 +118,7 @@ export async function startStt(
   onFinal: SttFinalCallback,
   onError: SttErrorCallback,
 ): Promise<void> {
+  if (!STT_ENABLED) throw new Error(STT_DISABLED_HINT);
   currentPartial = onPartial;
   currentFinal = onFinal;
   currentError = onError;
@@ -136,6 +140,7 @@ export function subscribeModelReady(listener: () => void): () => void {
 
 /** 预加载模型（提前初始化，避免首次语音等待 18 秒左右） */
 export async function warmupStt(): Promise<void> {
+  if (!STT_ENABLED) return;
   const socket = await ensureConnected();
 
   // 已就绪则直接返回
