@@ -56,6 +56,34 @@ jobs:
       - name: Package AppImage + deb
         run: npx electron-builder --linux AppImage deb --publish never
 
+      - name: Verify packaged native deps
+        run: |
+          # 防止再次打出「模块缺失」的空壳包。asar 头部是明文 JSON，
+          # 可直接 grep 文件路径。RAG 依赖三件套缺一不可：
+          #   @xenova/transformers 静态 import onnxruntime-node + onnxruntime-web
+          #   onnxruntime-node 需要同目录的 libonnxruntime.so（已 asarUnpack）
+          ASAR=release/linux-unpacked/resources/app.asar
+          UNPACKED=release/linux-unpacked/resources/app.asar.unpacked
+          test -f "$ASAR" || { echo "app.asar 不存在"; exit 1; }
+
+          check_asar() {
+            grep -qa "$1" "$ASAR" || { echo "FAIL: app.asar 缺少 $1"; exit 1; }
+            echo "OK: $1"
+          }
+          check_asar "onnxruntime-web/dist/ort-web.node.js"
+          check_asar "onnxruntime-node/package.json"
+          check_asar "@xenova/transformers/package.json"
+
+          ls -l "$UNPACKED/node_modules/onnxruntime-node/bin/napi-v3/linux/x64/"
+          test -n "$(ls -A "$UNPACKED"/node_modules/onnxruntime-node/bin/napi-v3/linux/x64/libonnxruntime.so* 2>/dev/null)" \
+            || { echo "FAIL: libonnxruntime.so 未解包到 app.asar.unpacked"; exit 1; }
+          echo "OK: libonnxruntime.so 已解包"
+
+          # 反向校验：确认裁剪生效，别又悄悄塞回 300MB
+          test ! -e "$UNPACKED/node_modules/onnxruntime-node/bin/napi-v3/win32" \
+            || { echo "FAIL: win32 原生库未被排除"; exit 1; }
+          echo "OK: win32/darwin/arm64 原生库已排除"
+
       - name: Checksums
         run: |
           cd release

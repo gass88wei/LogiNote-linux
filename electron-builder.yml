@@ -12,8 +12,15 @@ files:
   - "!**/node_modules/onnxruntime-node/bin/napi-v3/win32/**"
   - "!**/node_modules/onnxruntime-node/bin/napi-v3/darwin/**"
   - "!**/node_modules/onnxruntime-node/bin/napi-v3/linux/arm64/**"
-  # 与 Linux 无关的构建期大件
-  - "!**/node_modules/onnxruntime-web/**"
+  # 注意：onnxruntime-web 绝对不能整包排除。
+  # @xenova/transformers 的 src/backends/onnx.js 是「静态 import 两个后端」
+  # （源码注释说明 webpack 下动态 import 不工作），Node 环境虽然只用
+  # onnxruntime-node，但 onnxruntime-web 必须能被 resolve，否则报
+  #   Cannot find package 'onnxruntime-web' imported from
+  #   node_modules/@xenova/transformers/src/backends/onnx.js
+  # 只裁掉运行时用不到的 sourcemap（102 个文件、14.7MB）。
+  - "!**/node_modules/onnxruntime-web/dist/*.map"
+  - "!**/node_modules/onnxruntime-web/dist/**/*.map"
 asar: true
 # .node 原生模块会自动解包，但它 dlopen 的同目录 libonnxruntime.so 不会。
 # 留在 asar 内会导致 "cannot open shared object file"，RAG 直接崩。
